@@ -1,0 +1,125 @@
+@page "/categories"
+@using InventorySystem.Models
+@using InventorySystem.Services
+@inject CategoryService CategorySvc
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+@rendermode InteractiveServer
+
+<PageTitle>Kategori - Sistem Inventory</PageTitle>
+
+<RadzenStack Gap="1.5rem" class="rz-p-4">
+    <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+        <RadzenColumn>
+            <RadzenText TextStyle="TextStyle.H4" class="rz-mb-0">
+                <RadzenIcon Icon="category" class="rz-mr-1" /> Master Kategori
+            </RadzenText>
+        </RadzenColumn>
+        <RadzenColumn>
+            <RadzenButton Text="Tambah Kategori" Icon="add_circle_outline" ButtonStyle="ButtonStyle.Primary"
+                          Click="@ShowAddDialog" Style="float: right;" />
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenCard class="rz-p-4 rz-border-radius-3">
+        <RadzenDataGrid @ref="grid" AllowFiltering="true" AllowSorting="true" AllowPaging="true" PageSize="10"
+                        Data="@categories" TItem="Category" FilterMode="FilterMode.Simple"
+                        Density="Density.Default" class="rz-border-radius-2">
+            <Columns>
+                <RadzenDataGridColumn TItem="Category" Property="Id" Title="ID" Width="80px" TextAlign="TextAlign.Center" Filterable="false" />
+                <RadzenDataGridColumn TItem="Category" Property="Name" Title="Nama Kategori" />
+                <RadzenDataGridColumn TItem="Category" Property="Description" Title="Deskripsi" />
+                <RadzenDataGridColumn TItem="Category" Title="Jumlah Barang" Width="140px" TextAlign="TextAlign.Center" Sortable="false" Filterable="false">
+                    <Template Context="category">
+                        <RadzenBadge BadgeStyle="BadgeStyle.Info" Text="@category.Products.Count.ToString()" IsPill="true" />
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="Category" Property="CreatedAt" Title="Dibuat" Width="160px" FormatString="{0:dd MMM yyyy}" />
+                <RadzenDataGridColumn TItem="Category" Title="Aksi" Width="160px" TextAlign="TextAlign.Center" Sortable="false" Filterable="false">
+                    <Template Context="category">
+                        <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Warning" Variant="Variant.Flat" Size="ButtonSize.Small"
+                                      Click="@(() => ShowEditDialog(category))" class="rz-mr-1" />
+                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Size="ButtonSize.Small"
+                                      Click="@(() => DeleteCategory(category))" />
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    </RadzenCard>
+</RadzenStack>
+
+@code {
+    private RadzenDataGrid<Category>? grid;
+    private List<Category> categories = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        categories = await CategorySvc.GetAllAsync();
+    }
+
+    private async Task ShowAddDialog()
+    {
+        var newCategory = new Category();
+        var result = await DialogService.OpenAsync<CategoryForm>("Tambah Kategori",
+            new Dictionary<string, object> { { "Category", newCategory }, { "IsEdit", false } },
+            new DialogOptions { Width = "500px", CloseDialogOnOverlayClick = true });
+
+        if (result == true)
+        {
+            await CategorySvc.CreateAsync(newCategory);
+            await LoadData();
+            NotificationService.Notify(NotificationSeverity.Success, "Berhasil", "Kategori berhasil ditambahkan");
+        }
+    }
+
+    private async Task ShowEditDialog(Category category)
+    {
+        var editCategory = new Category
+        {
+            Id = category.Id,
+            Name = category.Name,
+            Description = category.Description,
+            CreatedAt = category.CreatedAt
+        };
+
+        var result = await DialogService.OpenAsync<CategoryForm>("Edit Kategori",
+            new Dictionary<string, object> { { "Category", editCategory }, { "IsEdit", true } },
+            new DialogOptions { Width = "500px", CloseDialogOnOverlayClick = true });
+
+        if (result == true)
+        {
+            category.Name = editCategory.Name;
+            category.Description = editCategory.Description;
+            await CategorySvc.UpdateAsync(category);
+            await LoadData();
+            NotificationService.Notify(NotificationSeverity.Success, "Berhasil", "Kategori berhasil diperbarui");
+        }
+    }
+
+    private async Task DeleteCategory(Category category)
+    {
+        var confirm = await DialogService.Confirm(
+            $"Apakah Anda yakin ingin menghapus kategori \"{category.Name}\"?",
+            "Konfirmasi Hapus",
+            new ConfirmOptions { OkButtonText = "Hapus", CancelButtonText = "Batal" });
+
+        if (confirm == true)
+        {
+            try
+            {
+                await CategorySvc.DeleteAsync(category.Id);
+                await LoadData();
+                NotificationService.Notify(NotificationSeverity.Success, "Berhasil", "Kategori berhasil dihapus");
+            }
+            catch (Exception)
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Gagal", "Tidak dapat menghapus kategori yang memiliki barang");
+            }
+        }
+    }
+}

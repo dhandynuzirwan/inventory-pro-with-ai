@@ -1,0 +1,27 @@
+@using InventorySystem.Models
+
+<RadzenStack Gap="1rem">
+    <RadzenFormField Text="Nama Kategori" Variant="Variant.Outlined">
+        <RadzenTextBox @bind-Value="Category.Name" Placeholder="Masukkan nama kategori" Style="width: 100%;" />
+    </RadzenFormField>
+
+    <RadzenFormField Text="Deskripsi" Variant="Variant.Outlined">
+        <RadzenTextArea @bind-Value="Category.Description" Placeholder="Masukkan deskripsi" Rows="3" Style="width: 100%;" />
+    </RadzenFormField>
+
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+        <RadzenButton Text="Batal" ButtonStyle="ButtonStyle.Light" Click="@Cancel" />
+        <RadzenButton Text="@(IsEdit ? "Simpan" : "Tambah")" ButtonStyle="ButtonStyle.Primary" Click="@Save"
+                      Disabled="@string.IsNullOrWhiteSpace(Category.Name)" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    [Parameter] public Category Category { get; set; } = new();
+    [Parameter] public bool IsEdit { get; set; }
+
+    [Inject] public DialogService DialogService { get; set; } = default!;
+
+    private void Save() => DialogService.Close(true);
+    private void Cancel() => DialogService.Close(false);
+}

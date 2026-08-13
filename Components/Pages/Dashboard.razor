@@ -1,0 +1,187 @@
+@page "/"
+@page "/dashboard"
+@using InventorySystem.Models
+@using InventorySystem.Services
+@inject DashboardService DashboardSvc
+@inject ProductService ProductSvc
+@inject AiAnalysisService AiSvc
+@rendermode InteractiveServer
+
+<PageTitle>Dashboard - Sistem Inventory</PageTitle>
+
+<RadzenStack Gap="1.5rem" class="rz-p-4">
+    <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+        <RadzenColumn>
+            <RadzenText TextStyle="TextStyle.H4" class="rz-mb-0">
+                <RadzenIcon Icon="dashboard" class="rz-mr-1" /> Dashboard Inventory
+            </RadzenText>
+        </RadzenColumn>
+        <RadzenColumn>
+            <RadzenButton Text="@(isAnalyzing ? "Menganalisis..." : "🤖 AI Summary")" 
+                          Icon="auto_awesome" ButtonStyle="ButtonStyle.Secondary" 
+                          Variant="Variant.Outlined"
+                          Click="@GenerateAiSummary" Disabled="@isAnalyzing" 
+                          Style="float: right;" />
+        </RadzenColumn>
+    </RadzenRow>
+
+    @* AI Summary *@
+    @if (!string.IsNullOrEmpty(aiSummary))
+    {
+        <RadzenCard class="rz-p-4 rz-border-radius-3" Style="background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%); border-left: 4px solid #667eea;">
+            <RadzenStack Gap="0.5rem">
+                <RadzenText TextStyle="TextStyle.H6" Style="color: var(--rz-primary);">
+                    <RadzenIcon Icon="auto_awesome" /> Analisis AI — Gemini
+                </RadzenText>
+                <RadzenText Style="white-space: pre-line; line-height: 1.7;">@aiSummary</RadzenText>
+            </RadzenStack>
+        </RadzenCard>
+    }
+
+    @* KPI Cards *@
+    <RadzenRow Gap="1.5rem" JustifyContent="JustifyContent.Start">
+        <RadzenColumn Size="12" SizeMD="6" SizeLG="3">
+            <RadzenCard class="rz-p-6 rz-border-radius-3 kpi-card" Style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                    <RadzenStack Gap="0.25rem">
+                        <RadzenText TextStyle="TextStyle.Overline" Style="color: rgba(255,255,255,0.8);">Total Barang</RadzenText>
+                        <RadzenText TextStyle="TextStyle.H5" Style="color: white; font-weight: 700;">@totalProducts</RadzenText>
+                    </RadzenStack>
+                    <RadzenIcon Icon="inventory_2" Style="font-size: 3rem; color: rgba(255,255,255,0.3);" />
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+        <RadzenColumn Size="12" SizeMD="6" SizeLG="3">
+            <RadzenCard class="rz-p-6 rz-border-radius-3 kpi-card" Style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                    <RadzenStack Gap="0.25rem">
+                        <RadzenText TextStyle="TextStyle.Overline" Style="color: rgba(255,255,255,0.8);">Stok Rendah</RadzenText>
+                        <RadzenText TextStyle="TextStyle.H5" Style="color: white; font-weight: 700;">@lowStockCount</RadzenText>
+                    </RadzenStack>
+                    <RadzenIcon Icon="warning" Style="font-size: 3rem; color: rgba(255,255,255,0.3);" />
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+        <RadzenColumn Size="12" SizeMD="6" SizeLG="3">
+            <RadzenCard class="rz-p-6 rz-border-radius-3 kpi-card" Style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                    <RadzenStack Gap="0.25rem">
+                        <RadzenText TextStyle="TextStyle.Overline" Style="color: rgba(255,255,255,0.8);">Total Kategori</RadzenText>
+                        <RadzenText TextStyle="TextStyle.H5" Style="color: white; font-weight: 700;">@totalCategories</RadzenText>
+                    </RadzenStack>
+                    <RadzenIcon Icon="category" Style="font-size: 3rem; color: rgba(255,255,255,0.3);" />
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+        <RadzenColumn Size="12" SizeMD="6" SizeLG="3">
+            <RadzenCard class="rz-p-6 rz-border-radius-3 kpi-card" Style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                    <RadzenStack Gap="0.25rem">
+                        <RadzenText TextStyle="TextStyle.Overline" Style="color: rgba(255,255,255,0.8);">Nilai Inventory</RadzenText>
+                        <RadzenText TextStyle="TextStyle.H5" Style="color: white; font-weight: 700;">Rp @totalValue.ToString("N0")</RadzenText>
+                    </RadzenStack>
+                    <RadzenIcon Icon="payments" Style="font-size: 3rem; color: rgba(255,255,255,0.3);" />
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    @* Charts *@
+    <RadzenRow Gap="1.5rem">
+        <RadzenColumn Size="12" SizeLG="6">
+            <RadzenCard class="rz-p-4 rz-border-radius-3">
+                <RadzenText TextStyle="TextStyle.H5" class="rz-mb-4">
+                    Stok per Kategori
+                </RadzenText>
+                <RadzenChart Style="height: 320px;">
+                    <RadzenColumnSeries Data="@stockByCategory" CategoryProperty="CategoryName" ValueProperty="TotalStock" Title="Total Stok" Fill="#C62828" />
+                    <RadzenColumnOptions Radius="5" Width="30" />
+                    <RadzenCategoryAxis Padding="20" />
+                    <RadzenValueAxis>
+                        <RadzenGridLines Visible="true" />
+                    </RadzenValueAxis>
+                    <RadzenLegend Visible="false" />
+                </RadzenChart>
+            </RadzenCard>
+        </RadzenColumn>
+        <RadzenColumn Size="12" SizeLG="6">
+            <RadzenCard class="rz-p-4 rz-border-radius-3">
+                <RadzenText TextStyle="TextStyle.H5" class="rz-mb-4">
+                    Jumlah Produk per Kategori
+                </RadzenText>
+                <RadzenChart Style="height: 320px;">
+                    <RadzenDonutSeries Data="@stockByCategory" Title="ProductCount" CategoryProperty="CategoryName" ValueProperty="ProductCount"
+                                        InnerRadius="80" SegmentGap="2"
+                                        Fills="@(new[] { "#8B0000", "#C62828", "#E53935", "#EF5350", "#EF9A9A" })">
+                        <RadzenSeriesDataLabels Visible="true" Position="DataLabelPosition.Inside" />
+                    </RadzenDonutSeries>
+                    <RadzenLegend Position="LegendPosition.Bottom" />
+                </RadzenChart>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    @* Low Stock Table *@
+    <RadzenCard class="rz-p-4 rz-border-radius-3">
+        <RadzenText TextStyle="TextStyle.H5" class="rz-mb-4">
+            Barang Stok Rendah
+        </RadzenText>
+        <RadzenDataGrid AllowFiltering="false" AllowSorting="true" Data="@lowStockProducts" TItem="Product"
+                        Density="Density.Compact" class="rz-border-radius-2">
+            <Columns>
+                <RadzenDataGridColumn TItem="Product" Property="SKU" Title="SKU" Width="100px" />
+                <RadzenDataGridColumn TItem="Product" Property="Name" Title="Nama Barang" />
+                <RadzenDataGridColumn TItem="Product" Property="Category.Name" Title="Kategori" Width="150px" />
+                <RadzenDataGridColumn TItem="Product" Property="Stock" Title="Stok" Width="100px" TextAlign="TextAlign.Center">
+                    <Template Context="product">
+                        <RadzenBadge BadgeStyle="@(product.Stock == 0 ? BadgeStyle.Danger : BadgeStyle.Warning)" 
+                                     Text="@product.Stock.ToString()" IsPill="true" />
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="Product" Property="MinimumStock" Title="Stok Min." Width="100px" TextAlign="TextAlign.Center" />
+                <RadzenDataGridColumn TItem="Product" Property="Price" Title="Harga" Width="150px" FormatString="{0:N0}" TextAlign="TextAlign.End" />
+            </Columns>
+        </RadzenDataGrid>
+    </RadzenCard>
+</RadzenStack>
+
+@code {
+    private int totalProducts;
+    private int lowStockCount;
+    private int totalCategories;
+    private decimal totalValue;
+    private List<CategoryStockData> stockByCategory = new();
+    private List<Product> lowStockProducts = new();
+    private string aiSummary = string.Empty;
+    private bool isAnalyzing = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        totalProducts = await DashboardSvc.GetTotalProductsAsync();
+        lowStockCount = await DashboardSvc.GetLowStockCountAsync();
+        totalCategories = await DashboardSvc.GetTotalCategoriesAsync();
+        totalValue = await DashboardSvc.GetTotalInventoryValueAsync();
+        stockByCategory = await DashboardSvc.GetStockByCategoryAsync();
+        lowStockProducts = await ProductSvc.GetLowStockProductsAsync();
+    }
+
+    private async Task GenerateAiSummary()
+    {
+        isAnalyzing = true;
+        StateHasChanged();
+
+        try
+        {
+            aiSummary = await AiSvc.GenerateAnalysisAsync();
+        }
+        catch (Exception ex)
+        {
+            aiSummary = $"⚠️ Gagal menghasilkan analisis: {ex.Message}";
+        }
+        finally
+        {
+            isAnalyzing = false;
+            StateHasChanged();
+        }
+    }
+}

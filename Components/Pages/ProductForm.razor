@@ -1,0 +1,62 @@
+@using InventorySystem.Models
+
+<RadzenStack Gap="1rem">
+    <RadzenRow Gap="1rem">
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenFormField Text="Nama Barang" Variant="Variant.Outlined" Style="width: 100%;">
+                <RadzenTextBox @bind-Value="Product.Name" Placeholder="Masukkan nama barang" Style="width: 100%;" />
+            </RadzenFormField>
+        </RadzenColumn>
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenFormField Text="SKU" Variant="Variant.Outlined" Style="width: 100%;">
+                <RadzenTextBox @bind-Value="Product.SKU" Placeholder="Contoh: ELK-001" Style="width: 100%;" />
+            </RadzenFormField>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenFormField Text="Kategori" Variant="Variant.Outlined" Style="width: 100%;">
+        <RadzenDropDown @bind-Value="Product.CategoryId" Data="@Categories" TextProperty="Name" ValueProperty="Id"
+                        Placeholder="Pilih kategori" Style="width: 100%;" />
+    </RadzenFormField>
+
+    <RadzenRow Gap="1rem">
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenFormField Text="Harga (Rp)" Variant="Variant.Outlined" Style="width: 100%;">
+                <RadzenNumeric @bind-Value="Product.Price" Min="0" Format="N0" Placeholder="0" Style="width: 100%;" />
+            </RadzenFormField>
+        </RadzenColumn>
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenFormField Text="Stok Minimum" Variant="Variant.Outlined" Style="width: 100%;">
+                <RadzenNumeric @bind-Value="Product.MinimumStock" Min="0" Placeholder="10" Style="width: 100%;" />
+            </RadzenFormField>
+        </RadzenColumn>
+    </RadzenRow>
+
+    @if (!IsEdit)
+    {
+        <RadzenFormField Text="Stok Awal" Variant="Variant.Outlined" Style="width: 100%;">
+            <RadzenNumeric @bind-Value="Product.Stock" Min="0" Placeholder="0" Style="width: 100%;" />
+        </RadzenFormField>
+    }
+
+    <RadzenFormField Text="Deskripsi" Variant="Variant.Outlined" Style="width: 100%;">
+        <RadzenTextArea @bind-Value="Product.Description" Placeholder="Masukkan deskripsi barang" Rows="3" Style="width: 100%;" />
+    </RadzenFormField>
+
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+        <RadzenButton Text="Batal" ButtonStyle="ButtonStyle.Light" Click="@Cancel" />
+        <RadzenButton Text="@(IsEdit ? "Simpan" : "Tambah")" ButtonStyle="ButtonStyle.Primary" Click="@Save"
+                      Disabled="@(string.IsNullOrWhiteSpace(Product.Name) || string.IsNullOrWhiteSpace(Product.SKU) || Product.CategoryId == 0)" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    [Parameter] public Product Product { get; set; } = new();
+    [Parameter] public List<Category> Categories { get; set; } = new();
+    [Parameter] public bool IsEdit { get; set; }
+
+    [Inject] public DialogService DialogService { get; set; } = default!;
+
+    private void Save() => DialogService.Close(true);
+    private void Cancel() => DialogService.Close(false);
+}

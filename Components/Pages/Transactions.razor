@@ -1,0 +1,137 @@
+@page "/transactions"
+@using InventorySystem.Models
+@using InventorySystem.Services
+@inject StockTransactionService TransactionSvc
+@inject ProductService ProductSvc
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+@rendermode InteractiveServer
+
+<PageTitle>Transaksi Stok - Sistem Inventory</PageTitle>
+
+<RadzenStack Gap="1.5rem" class="rz-p-4">
+    <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+        <RadzenColumn>
+            <RadzenText TextStyle="TextStyle.H4" class="rz-mb-0">
+                <RadzenIcon Icon="swap_horiz" class="rz-mr-1" /> Transaksi Stok
+            </RadzenText>
+        </RadzenColumn>
+        <RadzenColumn>
+            <RadzenButton Text="Tambah Transaksi" Icon="add_circle_outline" ButtonStyle="ButtonStyle.Primary"
+                          Click="@ShowAddDialog" Style="float: right;" />
+        </RadzenColumn>
+    </RadzenRow>
+
+    @* Filter Date Range *@
+    <RadzenCard class="rz-p-4 rz-border-radius-3">
+        <RadzenRow AlignItems="AlignItems.End" Gap="1rem">
+            <RadzenColumn Size="12" SizeMD="4">
+                <RadzenFormField Text="Dari Tanggal" Variant="Variant.Outlined" Style="width: 100%;">
+                    <RadzenDatePicker @bind-Value="startDate" DateFormat="dd/MM/yyyy" Style="width: 100%;" />
+                </RadzenFormField>
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="4">
+                <RadzenFormField Text="Sampai Tanggal" Variant="Variant.Outlined" Style="width: 100%;">
+                    <RadzenDatePicker @bind-Value="endDate" DateFormat="dd/MM/yyyy" Style="width: 100%;" />
+                </RadzenFormField>
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="4">
+                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+                    <RadzenButton Text="Filter" Icon="filter_alt" ButtonStyle="ButtonStyle.Info" Click="@FilterData" />
+                    <RadzenButton Text="Reset" Icon="refresh" ButtonStyle="ButtonStyle.Light" Click="@ResetFilter" />
+                </RadzenStack>
+            </RadzenColumn>
+        </RadzenRow>
+    </RadzenCard>
+
+    @* Transactions Table *@
+    <RadzenCard class="rz-p-4 rz-border-radius-3">
+        <RadzenDataGrid AllowFiltering="true" AllowSorting="true" AllowPaging="true" PageSize="15"
+                        Data="@transactions" TItem="StockTransaction" FilterMode="FilterMode.Simple"
+                        Density="Density.Default" class="rz-border-radius-2">
+            <Columns>
+                <RadzenDataGridColumn TItem="StockTransaction" Property="TransactionDate" Title="Tanggal" Width="160px" FormatString="{0:dd MMM yyyy HH:mm}" />
+                <RadzenDataGridColumn TItem="StockTransaction" Property="Product.Name" Title="Barang" />
+                <RadzenDataGridColumn TItem="StockTransaction" Property="Product.SKU" Title="SKU" Width="110px" />
+                <RadzenDataGridColumn TItem="StockTransaction" Title="Tipe" Width="120px" TextAlign="TextAlign.Center" Property="Type">
+                    <Template Context="tx">
+                        @if (tx.Type == TransactionType.In)
+                        {
+                            <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="Masuk" IsPill="true">
+                                <ChildContent><RadzenIcon Icon="arrow_downward" Style="font-size: 0.75rem;" /> Masuk</ChildContent>
+                            </RadzenBadge>
+                        }
+                        else
+                        {
+                            <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="Keluar" IsPill="true">
+                                <ChildContent><RadzenIcon Icon="arrow_upward" Style="font-size: 0.75rem;" /> Keluar</ChildContent>
+                            </RadzenBadge>
+                        }
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="StockTransaction" Property="Quantity" Title="Jumlah" Width="100px" TextAlign="TextAlign.Center">
+                    <Template Context="tx">
+                        <strong style="color: @(tx.Type == TransactionType.In ? "var(--rz-success)" : "var(--rz-danger)")">@(tx.Type == TransactionType.In ? "+" : "-")@tx.Quantity</strong>
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="StockTransaction" Property="Notes" Title="Catatan" />
+            </Columns>
+        </RadzenDataGrid>
+    </RadzenCard>
+</RadzenStack>
+
+@code {
+    private List<StockTransaction> transactions = new();
+    private List<Product> products = new();
+    private DateTime? startDate;
+    private DateTime? endDate;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+        products = await ProductSvc.GetAllAsync();
+    }
+
+    private async Task LoadData()
+    {
+        transactions = await TransactionSvc.GetAllAsync();
+    }
+
+    private async Task FilterData()
+    {
+        if (startDate.HasValue && endDate.HasValue)
+        {
+            transactions = await TransactionSvc.GetByDateRangeAsync(startDate.Value, endDate.Value.AddDays(1));
+        }
+    }
+
+    private async Task ResetFilter()
+    {
+        startDate = null;
+        endDate = null;
+        await LoadData();
+    }
+
+    private async Task ShowAddDialog()
+    {
+        var newTx = new StockTransaction();
+        var result = await DialogService.OpenAsync<TransactionForm>("Tambah Transaksi Stok",
+            new Dictionary<string, object> { { "Transaction", newTx }, { "Products", products } },
+            new DialogOptions { Width = "550px", CloseDialogOnOverlayClick = true });
+
+        if (result == true)
+        {
+            try
+            {
+                await TransactionSvc.CreateAsync(newTx);
+                await LoadData();
+                products = await ProductSvc.GetAllAsync();
+                NotificationService.Notify(NotificationSeverity.Success, "Berhasil", "Transaksi berhasil dicatat");
+            }
+            catch (InvalidOperationException ex)
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Gagal", ex.Message);
+            }
+        }
+    }
+}

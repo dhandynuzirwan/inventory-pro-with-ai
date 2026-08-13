@@ -1,0 +1,152 @@
+@page "/products"
+@using InventorySystem.Models
+@using InventorySystem.Services
+@inject ProductService ProductSvc
+@inject CategoryService CategorySvc
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+@rendermode InteractiveServer
+
+<PageTitle>Barang - Sistem Inventory</PageTitle>
+
+<RadzenStack Gap="1.5rem" class="rz-p-4">
+    <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+        <RadzenColumn>
+            <RadzenText TextStyle="TextStyle.H4" class="rz-mb-0">
+                <RadzenIcon Icon="inventory" class="rz-mr-1" /> Master Barang
+            </RadzenText>
+        </RadzenColumn>
+        <RadzenColumn>
+            <RadzenButton Text="Tambah Barang" Icon="add_circle_outline" ButtonStyle="ButtonStyle.Primary"
+                          Click="@ShowAddDialog" Style="float: right;" />
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenCard class="rz-p-4 rz-border-radius-3">
+        <RadzenDataGrid @ref="grid" AllowFiltering="true" AllowSorting="true" AllowPaging="true" PageSize="10"
+                        Data="@products" TItem="Product" FilterMode="FilterMode.Simple"
+                        Density="Density.Default" class="rz-border-radius-2">
+            <Columns>
+                <RadzenDataGridColumn TItem="Product" Property="SKU" Title="SKU" Width="110px" />
+                <RadzenDataGridColumn TItem="Product" Property="Name" Title="Nama Barang" MinWidth="200px" />
+                <RadzenDataGridColumn TItem="Product" Property="Category.Name" Title="Kategori" Width="150px" />
+                <RadzenDataGridColumn TItem="Product" Property="Price" Title="Harga" Width="150px" FormatString="{0:N0}" TextAlign="TextAlign.End" />
+                <RadzenDataGridColumn TItem="Product" Property="Stock" Title="Stok" Width="100px" TextAlign="TextAlign.Center">
+                    <Template Context="product">
+                        @{
+                            var style = BadgeStyle.Success;
+                            if (product.Stock == 0) style = BadgeStyle.Danger;
+                            else if (product.Stock <= product.MinimumStock) style = BadgeStyle.Warning;
+                        }
+                        <RadzenBadge BadgeStyle="@style" Text="@product.Stock.ToString()" IsPill="true" />
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="Product" Property="MinimumStock" Title="Stok Min." Width="100px" TextAlign="TextAlign.Center" />
+                <RadzenDataGridColumn TItem="Product" Title="Status" Width="120px" TextAlign="TextAlign.Center" Sortable="false" Filterable="false">
+                    <Template Context="product">
+                        @if (product.Stock == 0)
+                        {
+                            <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="Habis" />
+                        }
+                        else if (product.Stock <= product.MinimumStock)
+                        {
+                            <RadzenBadge BadgeStyle="BadgeStyle.Warning" Text="Rendah" />
+                        }
+                        else
+                        {
+                            <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="Aman" />
+                        }
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="Product" Title="Aksi" Width="160px" TextAlign="TextAlign.Center" Sortable="false" Filterable="false">
+                    <Template Context="product">
+                        <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Warning" Variant="Variant.Flat" Size="ButtonSize.Small"
+                                      Click="@(() => ShowEditDialog(product))" class="rz-mr-1" />
+                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Size="ButtonSize.Small"
+                                      Click="@(() => DeleteProduct(product))" />
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    </RadzenCard>
+</RadzenStack>
+
+@code {
+    private RadzenDataGrid<Product>? grid;
+    private List<Product> products = new();
+    private List<Category> categories = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        products = await ProductSvc.GetAllAsync();
+        categories = await CategorySvc.GetAllAsync();
+    }
+
+    private async Task ShowAddDialog()
+    {
+        var newProduct = new Product();
+        var result = await DialogService.OpenAsync<ProductForm>("Tambah Barang",
+            new Dictionary<string, object> { { "Product", newProduct }, { "Categories", categories }, { "IsEdit", false } },
+            new DialogOptions { Width = "600px", CloseDialogOnOverlayClick = true });
+
+        if (result == true)
+        {
+            await ProductSvc.CreateAsync(newProduct);
+            await LoadData();
+            NotificationService.Notify(NotificationSeverity.Success, "Berhasil", "Barang berhasil ditambahkan");
+        }
+    }
+
+    private async Task ShowEditDialog(Product product)
+    {
+        var editProduct = new Product
+        {
+            Id = product.Id,
+            Name = product.Name,
+            SKU = product.SKU,
+            CategoryId = product.CategoryId,
+            Price = product.Price,
+            Stock = product.Stock,
+            MinimumStock = product.MinimumStock,
+            Description = product.Description,
+            CreatedAt = product.CreatedAt
+        };
+
+        var result = await DialogService.OpenAsync<ProductForm>("Edit Barang",
+            new Dictionary<string, object> { { "Product", editProduct }, { "Categories", categories }, { "IsEdit", true } },
+            new DialogOptions { Width = "600px", CloseDialogOnOverlayClick = true });
+
+        if (result == true)
+        {
+            product.Name = editProduct.Name;
+            product.SKU = editProduct.SKU;
+            product.CategoryId = editProduct.CategoryId;
+            product.Price = editProduct.Price;
+            product.MinimumStock = editProduct.MinimumStock;
+            product.Description = editProduct.Description;
+            await ProductSvc.UpdateAsync(product);
+            await LoadData();
+            NotificationService.Notify(NotificationSeverity.Success, "Berhasil", "Barang berhasil diperbarui");
+        }
+    }
+
+    private async Task DeleteProduct(Product product)
+    {
+        var confirm = await DialogService.Confirm(
+            $"Apakah Anda yakin ingin menghapus barang \"{product.Name}\"?",
+            "Konfirmasi Hapus",
+            new ConfirmOptions { OkButtonText = "Hapus", CancelButtonText = "Batal" });
+
+        if (confirm == true)
+        {
+            await ProductSvc.DeleteAsync(product.Id);
+            await LoadData();
+            NotificationService.Notify(NotificationSeverity.Success, "Berhasil", "Barang berhasil dihapus");
+        }
+    }
+}

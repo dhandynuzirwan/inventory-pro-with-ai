@@ -1,0 +1,45 @@
+@using InventorySystem.Models
+
+<RadzenStack Gap="1rem">
+    <RadzenFormField Text="Barang" Variant="Variant.Outlined" Style="width: 100%;">
+        <RadzenDropDown @bind-Value="Transaction.ProductId" Data="@Products" TextProperty="Name" ValueProperty="Id"
+                        Placeholder="Pilih barang" Style="width: 100%;" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">
+            <Template Context="product">
+                <span>@((product as Product)?.Name) <small class="rz-color-secondary">(@((product as Product)?.SKU)) — Stok: @((product as Product)?.Stock)</small></span>
+            </Template>
+        </RadzenDropDown>
+    </RadzenFormField>
+
+    <RadzenFormField Text="Tipe Transaksi" Variant="Variant.Outlined" Style="width: 100%;">
+        <RadzenRadioButtonList @bind-Value="Transaction.Type" TValue="TransactionType" Orientation="Orientation.Horizontal">
+            <Items>
+                <RadzenRadioButtonListItem Text="Barang Masuk" Value="TransactionType.In" />
+                <RadzenRadioButtonListItem Text="Barang Keluar" Value="TransactionType.Out" />
+            </Items>
+        </RadzenRadioButtonList>
+    </RadzenFormField>
+
+    <RadzenFormField Text="Jumlah" Variant="Variant.Outlined" Style="width: 100%;">
+        <RadzenNumeric @bind-Value="Transaction.Quantity" Min="1" Placeholder="Masukkan jumlah" Style="width: 100%;" />
+    </RadzenFormField>
+
+    <RadzenFormField Text="Catatan" Variant="Variant.Outlined" Style="width: 100%;">
+        <RadzenTextArea @bind-Value="Transaction.Notes" Placeholder="Masukkan catatan (opsional)" Rows="3" Style="width: 100%;" />
+    </RadzenFormField>
+
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+        <RadzenButton Text="Batal" ButtonStyle="ButtonStyle.Light" Click="@Cancel" />
+        <RadzenButton Text="Simpan" ButtonStyle="ButtonStyle.Primary" Click="@Save"
+                      Disabled="@(Transaction.ProductId == 0 || Transaction.Quantity < 1)" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    [Parameter] public StockTransaction Transaction { get; set; } = new();
+    [Parameter] public List<Product> Products { get; set; } = new();
+
+    [Inject] public DialogService DialogService { get; set; } = default!;
+
+    private void Save() => DialogService.Close(true);
+    private void Cancel() => DialogService.Close(false);
+}

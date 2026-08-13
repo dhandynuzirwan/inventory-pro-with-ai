@@ -1,0 +1,41 @@
+@inherits LayoutComponentBase
+
+<RadzenLayout>
+    <RadzenHeader>
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0" class="rz-p-2">
+            <RadzenSidebarToggle Click="@(() => sidebarExpanded = !sidebarExpanded)" />
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem" class="rz-ml-2">
+                <RadzenIcon Icon="inventory_2" Style="font-size: 1.75rem; color: var(--rz-danger);" />
+                <RadzenText TextStyle="TextStyle.H5" class="rz-mb-0" Style="font-weight: 700; letter-spacing: -0.5px;">
+                    Inventory<span style="color: var(--rz-danger);">Pro</span>
+                </RadzenText>
+            </RadzenStack>
+        </RadzenStack>
+    </RadzenHeader>
+
+    <RadzenSidebar @bind-Expanded="@sidebarExpanded" Style="width: 260px; z-index: 2;">
+        <RadzenPanelMenu>
+            <RadzenPanelMenuItem Text="Dashboard" Icon="dashboard" Path="/" />
+            <RadzenPanelMenuItem Text="Master Data" Icon="storage" Expanded="true">
+                <RadzenPanelMenuItem Text="Kategori" Icon="category" Path="/categories" />
+                <RadzenPanelMenuItem Text="Barang" Icon="inventory" Path="/products" />
+            </RadzenPanelMenuItem>
+            <RadzenPanelMenuItem Text="Transaksi Stok" Icon="swap_horiz" Path="/transactions" />
+        </RadzenPanelMenu>
+    </RadzenSidebar>
+
+    <RadzenBody>
+        <div class="rz-p-0">
+            @Body
+        </div>
+    </RadzenBody>
+</RadzenLayout>
+
+<RadzenDialog />
+<RadzenNotification />
+<RadzenContextMenu />
+<RadzenTooltip />
+
+@code {
+    bool sidebarExpanded = true;
+}

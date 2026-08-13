@@ -1,0 +1,101 @@
+/* ============================================
+   Inventory System - Custom Styles
+   ============================================ */
+
+:root {
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+/* KPI Cards */
+.kpi-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: none !important;
+}
+
+.kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* DataGrid refinements */
+.rz-datatable .rz-datatable-thead > tr > th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+}
+
+/* Badge improvements */
+.rz-badge {
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+/* Card hover effect */
+.rz-card {
+    transition: box-shadow 0.2s ease;
+}
+
+.rz-card:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Sidebar active menu styling */
+.rz-panel-menu .rz-navigation-item-active {
+    font-weight: 600;
+}
+
+/* Smooth page transitions */
+.rz-body {
+    transition: margin-left 0.3s ease;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: rgba(155, 155, 155, 0.4);
+    border-radius: 20px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(155, 155, 155, 0.6);
+}
+
+/* Error UI */
+#blazor-error-ui {
+    background: rgba(220, 53, 69, 0.95);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    z-index: 9999;
+    display: none;
+    text-align: center;
+    backdrop-filter: blur(10px);
+}
+
+#blazor-error-ui .reload {
+    color: white;
+    text-decoration: underline;
+    margin-left: 0.5rem;
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    margin-left: 1rem;
+}
