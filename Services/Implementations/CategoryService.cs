@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace InventorySystem.Services;
 
-public class CategoryService
+public class CategoryService : ICategoryService
 {
     private readonly ICategoryRepository _repository;
 

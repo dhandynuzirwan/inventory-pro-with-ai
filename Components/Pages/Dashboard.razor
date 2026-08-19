@@ -2,9 +2,9 @@
 @page "/dashboard"
 @using InventorySystem.Models
 @using InventorySystem.Services
-@inject DashboardService DashboardSvc
-@inject ProductService ProductSvc
-@inject AiAnalysisService AiSvc
+@inject IDashboardService DashboardSvc
+@inject IProductService ProductSvc
+@inject IAiAnalysisService AiSvc
 @rendermode InteractiveServer
 
 <PageTitle>Dashboard - Sistem Inventory</PageTitle>

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace InventorySystem.Services;
 
-public class DashboardService
+public class DashboardService : IDashboardService
 {
     private readonly IProductRepository _productRepo;
     private readonly ICategoryRepository _categoryRepo;

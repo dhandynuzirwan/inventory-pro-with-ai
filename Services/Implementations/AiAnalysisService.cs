@@ -3,16 +3,16 @@ using InventorySystem.Models;
 
 namespace InventorySystem.Services;
 
-public class AiAnalysisService
+public class AiAnalysisService : IAiAnalysisService
 {
-    private readonly DashboardService _dashboardService;
-    private readonly ProductService _productService;
+    private readonly IDashboardService _dashboardService;
+    private readonly IProductService _productService;
     private readonly IConfiguration _configuration;
     private readonly ILogger<AiAnalysisService> _logger;
 
     public AiAnalysisService(
-        DashboardService dashboardService,
-        ProductService productService,
+        IDashboardService dashboardService,
+        IProductService productService,
         IConfiguration configuration,
         ILogger<AiAnalysisService> logger)
     {

@@ -1,8 +1,8 @@
 @page "/transactions"
 @using InventorySystem.Models
 @using InventorySystem.Services
-@inject StockTransactionService TransactionSvc
-@inject ProductService ProductSvc
+@inject IStockTransactionService TransactionSvc
+@inject IProductService ProductSvc
 @inject DialogService DialogService
 @inject NotificationService NotificationService
 @rendermode InteractiveServer

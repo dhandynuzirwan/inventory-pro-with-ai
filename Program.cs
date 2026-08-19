@@ -26,11 +26,11 @@ builder.Services.AddScoped<InventorySystem.Repositories.IProductRepository, Inve
 builder.Services.AddScoped<InventorySystem.Repositories.IStockTransactionRepository, InventorySystem.Repositories.StockTransactionRepository>();
 
 // Application services
-builder.Services.AddScoped<CategoryService>();
-builder.Services.AddScoped<ProductService>();
-builder.Services.AddScoped<StockTransactionService>();
-builder.Services.AddScoped<DashboardService>();
-builder.Services.AddScoped<AiAnalysisService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IStockTransactionService, StockTransactionService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IAiAnalysisService, AiAnalysisService>();
 
 var app = builder.Build();
 

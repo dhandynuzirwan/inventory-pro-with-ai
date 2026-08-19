@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace InventorySystem.Services;
 
-public class StockTransactionService
+public class StockTransactionService : IStockTransactionService
 {
     private readonly IStockTransactionRepository _transactionRepo;
     private readonly IProductRepository _productRepo;

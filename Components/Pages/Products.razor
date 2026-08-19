@@ -1,8 +1,8 @@
 @page "/products"
 @using InventorySystem.Models
 @using InventorySystem.Services
-@inject ProductService ProductSvc
-@inject CategoryService CategorySvc
+@inject IProductService ProductSvc
+@inject ICategoryService CategorySvc
 @inject DialogService DialogService
 @inject NotificationService NotificationService
 @rendermode InteractiveServer
