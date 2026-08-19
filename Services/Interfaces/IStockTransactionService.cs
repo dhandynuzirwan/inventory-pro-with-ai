@@ -5,6 +5,9 @@ using System.Threading.Tasks;
 
 namespace InventorySystem.Services;
 
+/// <summary>
+/// Service interface handling the business logic for stock transactions and approval workflow.
+/// </summary>
 public interface IStockTransactionService
 {
     Task<List<StockTransaction>> GetAllAsync();
