@@ -1,54 +1,48 @@
-using Microsoft.EntityFrameworkCore;
-using InventorySystem.Data;
 using InventorySystem.Models;
+using InventorySystem.Repositories;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace InventorySystem.Services;
 
 public class CategoryService
 {
-    private readonly InventoryDbContext _context;
+    private readonly ICategoryRepository _repository;
 
-    public CategoryService(InventoryDbContext context)
+    public CategoryService(ICategoryRepository repository)
     {
-        _context = context;
+        _repository = repository;
     }
 
     public async Task<List<Category>> GetAllAsync()
     {
-        return await _context.Categories
-            .Include(c => c.Products)
-            .OrderBy(c => c.Name)
-            .ToListAsync();
+        return await _repository.GetAllWithProductsAsync();
     }
 
     public async Task<Category?> GetByIdAsync(int id)
     {
-        return await _context.Categories
-            .Include(c => c.Products)
-            .FirstOrDefaultAsync(c => c.Id == id);
+        return await _repository.GetByIdWithProductsAsync(id);
     }
 
     public async Task<Category> CreateAsync(Category category)
     {
         category.CreatedAt = DateTime.Now;
-        _context.Categories.Add(category);
-        await _context.SaveChangesAsync();
+        await _repository.AddAsync(category);
         return category;
     }
 
     public async Task UpdateAsync(Category category)
     {
-        _context.Categories.Update(category);
-        await _context.SaveChangesAsync();
+        await _repository.UpdateAsync(category);
     }
 
     public async Task DeleteAsync(int id)
     {
-        var category = await _context.Categories.FindAsync(id);
+        var category = await _repository.GetByIdAsync(id);
         if (category != null)
         {
-            _context.Categories.Remove(category);
-            await _context.SaveChangesAsync();
+            await _repository.DeleteAsync(category);
         }
     }
 }

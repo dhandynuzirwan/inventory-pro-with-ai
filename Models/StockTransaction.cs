@@ -21,5 +21,7 @@ public class StockTransaction
 
     public DateTime TransactionDate { get; set; } = DateTime.Now;
 
+    public TransactionStatus Status { get; set; } = TransactionStatus.Pending;
+
     public Product? Product { get; set; }
 }

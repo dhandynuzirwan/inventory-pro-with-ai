@@ -19,6 +19,12 @@ builder.Services.AddRadzenComponents();
 builder.Services.AddDbContext<InventoryDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
     
+// Repositories
+builder.Services.AddScoped(typeof(InventorySystem.Repositories.IRepository<>), typeof(InventorySystem.Repositories.Repository<>));
+builder.Services.AddScoped<InventorySystem.Repositories.ICategoryRepository, InventorySystem.Repositories.CategoryRepository>();
+builder.Services.AddScoped<InventorySystem.Repositories.IProductRepository, InventorySystem.Repositories.ProductRepository>();
+builder.Services.AddScoped<InventorySystem.Repositories.IStockTransactionRepository, InventorySystem.Repositories.StockTransactionRepository>();
+
 // Application services
 builder.Services.AddScoped<CategoryService>();
 builder.Services.AddScoped<ProductService>();

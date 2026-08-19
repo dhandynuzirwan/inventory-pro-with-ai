@@ -75,6 +75,33 @@
                     </Template>
                 </RadzenDataGridColumn>
                 <RadzenDataGridColumn TItem="StockTransaction" Property="Notes" Title="Catatan" />
+                <RadzenDataGridColumn TItem="StockTransaction" Title="Status" Width="120px" TextAlign="TextAlign.Center" Property="Status">
+                    <Template Context="tx">
+                        @if (tx.Status == TransactionStatus.Pending)
+                        {
+                            <RadzenBadge BadgeStyle="BadgeStyle.Warning" Text="Pending" IsPill="true" />
+                        }
+                        else if (tx.Status == TransactionStatus.Approved)
+                        {
+                            <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="Approved" IsPill="true" />
+                        }
+                        else
+                        {
+                            <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="Rejected" IsPill="true" />
+                        }
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="StockTransaction" Title="Aksi" Width="120px" TextAlign="TextAlign.Center" Filterable="false" Sortable="false">
+                    <Template Context="tx">
+                        @if (tx.Status == TransactionStatus.Pending)
+                        {
+                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Center" Gap="0.25rem">
+                                <RadzenButton Icon="check_circle" ButtonStyle="ButtonStyle.Success" Variant="Variant.Flat" Size="ButtonSize.ExtraSmall" Click="@(() => ApproveTransaction(tx))" Tooltip="Setujui" />
+                                <RadzenButton Icon="cancel" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Size="ButtonSize.ExtraSmall" Click="@(() => RejectTransaction(tx))" Tooltip="Tolak" />
+                            </RadzenStack>
+                        }
+                    </Template>
+                </RadzenDataGridColumn>
             </Columns>
         </RadzenDataGrid>
     </RadzenCard>
@@ -129,6 +156,43 @@
                 NotificationService.Notify(NotificationSeverity.Success, "Berhasil", "Transaksi berhasil dicatat");
             }
             catch (InvalidOperationException ex)
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Gagal", ex.Message);
+            }
+        }
+    }
+
+    private async Task ApproveTransaction(StockTransaction tx)
+    {
+        var confirm = await DialogService.Confirm("Apakah Anda yakin ingin menyetujui transaksi ini?", "Persetujuan", new ConfirmOptions() { OkButtonText = "Ya", CancelButtonText = "Tidak" });
+        if (confirm == true)
+        {
+            try
+            {
+                await TransactionSvc.ApproveAsync(tx.Id);
+                await LoadData();
+                products = await ProductSvc.GetAllAsync();
+                NotificationService.Notify(NotificationSeverity.Success, "Berhasil", "Transaksi disetujui");
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Gagal", ex.Message);
+            }
+        }
+    }
+
+    private async Task RejectTransaction(StockTransaction tx)
+    {
+        var confirm = await DialogService.Confirm("Apakah Anda yakin ingin menolak transaksi ini?", "Penolakan", new ConfirmOptions() { OkButtonText = "Ya", CancelButtonText = "Tidak" });
+        if (confirm == true)
+        {
+            try
+            {
+                await TransactionSvc.RejectAsync(tx.Id);
+                await LoadData();
+                NotificationService.Notify(NotificationSeverity.Info, "Berhasil", "Transaksi ditolak");
+            }
+            catch (Exception ex)
             {
                 NotificationService.Notify(NotificationSeverity.Error, "Gagal", ex.Message);
             }

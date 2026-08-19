@@ -1,55 +1,83 @@
-using Microsoft.EntityFrameworkCore;
-using InventorySystem.Data;
 using InventorySystem.Models;
+using InventorySystem.Repositories;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace InventorySystem.Services;
 
 public class StockTransactionService
 {
-    private readonly InventoryDbContext _context;
+    private readonly IStockTransactionRepository _transactionRepo;
+    private readonly IProductRepository _productRepo;
 
-    public StockTransactionService(InventoryDbContext context)
+    public StockTransactionService(IStockTransactionRepository transactionRepo, IProductRepository productRepo)
     {
-        _context = context;
+        _transactionRepo = transactionRepo;
+        _productRepo = productRepo;
     }
 
     public async Task<List<StockTransaction>> GetAllAsync()
     {
-        return await _context.StockTransactions
-            .Include(t => t.Product)
-                .ThenInclude(p => p!.Category)
-            .OrderByDescending(t => t.TransactionDate)
-            .ToListAsync();
+        return await _transactionRepo.GetAllWithDetailsAsync();
     }
 
     public async Task<List<StockTransaction>> GetByDateRangeAsync(DateTime start, DateTime end)
     {
-        return await _context.StockTransactions
-            .Include(t => t.Product)
-                .ThenInclude(p => p!.Category)
-            .Where(t => t.TransactionDate >= start && t.TransactionDate <= end)
-            .OrderByDescending(t => t.TransactionDate)
-            .ToListAsync();
+        return await _transactionRepo.GetByDateRangeAsync(start, end);
     }
 
     public async Task<StockTransaction> CreateAsync(StockTransaction transaction)
     {
-        var product = await _context.Products.FindAsync(transaction.ProductId);
+        var product = await _productRepo.GetByIdAsync(transaction.ProductId);
         if (product == null)
             throw new InvalidOperationException("Barang tidak ditemukan");
 
-        if (transaction.Type == TransactionType.Out && product.Stock < transaction.Quantity)
-            throw new InvalidOperationException($"Stok tidak mencukupi. Stok saat ini: {product.Stock}");
+        // We don't check or update stock here anymore. It's done on Approval.
+        transaction.Status = TransactionStatus.Pending;
+        transaction.TransactionDate = DateTime.Now;
+        
+        await _transactionRepo.AddAsync(transaction);
+        return transaction;
+    }
+
+    public async Task ApproveAsync(int id)
+    {
+        var transaction = await _transactionRepo.GetByIdWithProductAsync(id);
+        if (transaction == null)
+            throw new InvalidOperationException("Transaksi tidak ditemukan");
+
+        if (transaction.Status != TransactionStatus.Pending)
+            throw new InvalidOperationException("Hanya transaksi Pending yang dapat disetujui");
+
+        if (transaction.Product == null)
+            throw new InvalidOperationException("Barang tidak ditemukan");
+
+        if (transaction.Type == TransactionType.Out && transaction.Product.Stock < transaction.Quantity)
+            throw new InvalidOperationException($"Stok tidak mencukupi. Stok saat ini: {transaction.Product.Stock}");
 
         // Update stock
         if (transaction.Type == TransactionType.In)
-            product.Stock += transaction.Quantity;
+            transaction.Product.Stock += transaction.Quantity;
         else
-            product.Stock -= transaction.Quantity;
+            transaction.Product.Stock -= transaction.Quantity;
 
-        transaction.TransactionDate = DateTime.Now;
-        _context.StockTransactions.Add(transaction);
-        await _context.SaveChangesAsync();
-        return transaction;
+        transaction.Status = TransactionStatus.Approved;
+        
+        // Update both the transaction and the product stock
+        await _transactionRepo.UpdateAsync(transaction);
+    }
+
+    public async Task RejectAsync(int id)
+    {
+        var transaction = await _transactionRepo.GetByIdAsync(id);
+        if (transaction == null)
+            throw new InvalidOperationException("Transaksi tidak ditemukan");
+
+        if (transaction.Status != TransactionStatus.Pending)
+            throw new InvalidOperationException("Hanya transaksi Pending yang dapat ditolak");
+
+        transaction.Status = TransactionStatus.Rejected;
+        await _transactionRepo.UpdateAsync(transaction);
     }
 }

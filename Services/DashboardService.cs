@@ -1,42 +1,50 @@
-using Microsoft.EntityFrameworkCore;
-using InventorySystem.Data;
 using InventorySystem.Models;
+using InventorySystem.Repositories;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace InventorySystem.Services;
 
 public class DashboardService
 {
-    private readonly InventoryDbContext _context;
+    private readonly IProductRepository _productRepo;
+    private readonly ICategoryRepository _categoryRepo;
+    private readonly IStockTransactionRepository _transactionRepo;
 
-    public DashboardService(InventoryDbContext context)
+    public DashboardService(IProductRepository productRepo, ICategoryRepository categoryRepo, IStockTransactionRepository transactionRepo)
     {
-        _context = context;
+        _productRepo = productRepo;
+        _categoryRepo = categoryRepo;
+        _transactionRepo = transactionRepo;
     }
 
     public async Task<int> GetTotalProductsAsync()
     {
-        return await _context.Products.CountAsync();
+        return await _productRepo.GetTotalProductsAsync();
     }
 
     public async Task<int> GetLowStockCountAsync()
     {
-        return await _context.Products.CountAsync(p => p.Stock <= p.MinimumStock);
+        return await _productRepo.GetLowStockCountAsync();
     }
 
     public async Task<int> GetTotalCategoriesAsync()
     {
-        return await _context.Categories.CountAsync();
+        var categories = await _categoryRepo.GetAllAsync();
+        return categories.Count();
     }
 
     public async Task<decimal> GetTotalInventoryValueAsync()
     {
-        return await _context.Products.SumAsync(p => p.Price * p.Stock);
+        return await _productRepo.GetTotalInventoryValueAsync();
     }
 
     public async Task<List<CategoryStockData>> GetStockByCategoryAsync()
     {
-        return await _context.Categories
-            .Include(c => c.Products)
+        var categories = await _categoryRepo.GetAllWithProductsAsync();
+        return categories
             .Select(c => new CategoryStockData
             {
                 CategoryName = c.Name,
@@ -44,15 +52,13 @@ public class DashboardService
                 ProductCount = c.Products.Count
             })
             .Where(c => c.ProductCount > 0)
-            .ToListAsync();
+            .ToList();
     }
 
     public async Task<List<TransactionTrendData>> GetTransactionTrendAsync(int days = 30)
     {
         var startDate = DateTime.Now.AddDays(-days).Date;
-        var transactions = await _context.StockTransactions
-            .Where(t => t.TransactionDate >= startDate)
-            .ToListAsync();
+        var transactions = await _transactionRepo.GetTransactionsFromDateAsync(startDate);
 
         return transactions
             .GroupBy(t => t.TransactionDate.Date)
@@ -68,11 +74,7 @@ public class DashboardService
 
     public async Task<List<StockTransaction>> GetRecentTransactionsAsync(int count = 10)
     {
-        return await _context.StockTransactions
-            .Include(t => t.Product)
-            .OrderByDescending(t => t.TransactionDate)
-            .Take(count)
-            .ToListAsync();
+        return await _transactionRepo.GetRecentTransactionsAsync(count);
     }
 }
 
